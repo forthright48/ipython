@@ -5,9 +5,7 @@
 # 
 # UVa has an api end point at [Uhunt](http://uhunt.felix-halim.net/api). This python script will extract information from api end point and convert to CSV files for Data Analysis
 
-# In[1]:
-
-get_ipython().magic('load_ext line_profiler')
+# In[49]:
 
 import pandas as pd
 import requests as rq
@@ -96,8 +94,8 @@ print ( "Total number of problems = {}".format(totalProblem))
 
 # In[6]:
 
-# Grab start and end time in unix time stamp
-# date -d "Jan 1 2016" +%s 
+# # Grab start and end time in unix time stamp
+# # date -d "Jan 1 2016" +%s 
 start2016 = 1451584800
 end2016 = 1483120800
 
@@ -108,18 +106,18 @@ totalSubProblem = len(subProblemIdList) - 1
 
 problemSubFolder = 'problem_sub_2016'
 
-for ind, problemId in enumerate ( subProblemIdList ) :
-    fileName = path.join( problemSubFolder, "{}.csv".format(problemId) )
-    if path.exists(fileName) :
-        if ind % 1000 == 0:
-            print ( "{:5}/{:<5} Done Processing Problem Id: {}. Already exists.".format(ind, totalSubProblem, problemId) )
-    else :
-        subAPI = "http://uhunt.felix-halim.net/api/p/subs/{}/{}/{}".format(problemId, start2016, end2016)
-        sub = rq.get(subAPI).json()
-        subDF = pd.DataFrame.from_records(sub)
-        subDF.to_csv(fileName, index=False )
-        if ind % 1000 == 0:
-            print ( "{:5}/{:<5} Done Processing Problem Id: {}".format(ind, totalSubProblem, problemId) )
+# for ind, problemId in enumerate ( subProblemIdList ) :
+#     fileName = path.join( problemSubFolder, "{}.csv".format(problemId) )
+#     if path.exists(fileName) :
+#         if ind % 1000 == 0:
+#             print ( "{:5}/{:<5} Done Processing Problem Id: {}. Already exists.".format(ind, totalSubProblem, problemId) )
+#     else :
+#         subAPI = "http://uhunt.felix-halim.net/api/p/subs/{}/{}/{}".format(problemId, start2016, end2016)
+#         sub = rq.get(subAPI).json()
+#         subDF = pd.DataFrame.from_records(sub)
+#         subDF.to_csv(fileName, index=False )
+#         if ind % 1000 == 0:
+#             print ( "{:5}/{:<5} Done Processing Problem Id: {}".format(ind, totalSubProblem, problemId) )
 
 
 # ### Finally Finshed!
@@ -128,16 +126,16 @@ for ind, problemId in enumerate ( subProblemIdList ) :
 # 
 # **Important** : Merging all problems into one files creates a csv file of size 120MB with over 5 million rows! So lets just merge a small amount of files.
 
-# In[43]:
+# In[54]:
 
-mergedFile = path.join( problemSubFolder, 'merged2016Small.csv' )
+mergedFile = 'merged2016.csv'
 
 if path.exists(mergedFile) is False:
     
     print ( "Merging CSV" )
     mergeSub = open( mergedFile, 'a' )
 
-    for ind, problemId in enumerate ( subProblemIdList[10:15] ):
+    for ind, problemId in enumerate ( subProblemIdList ):
         fileName = path.join( problemSubFolder, "{}.csv".format(problemId) )
         f = open(fileName)
         if ind > 0 : # Throw away the header file
@@ -159,17 +157,21 @@ submission = submission[~submission['uname'].isin(vjudgeUser)]
 
 print ( "Vjudge Removed")
 
+display(submission['ver'].unique())
+
 submission = submission.to_records()
+
 display(len(submission))
 
 
 # # Convert it to Coding Submission History
 
-# In[8]:
+# In[ ]:
 
 codingHistory = pd.DataFrame()
 
 verdicts = {
+    0  : "Unknown",
     10 : "Submission error",
     15 : " Can't be judged",
     20 : "In queue",
@@ -360,6 +362,9 @@ from cassandra.cluster import Cluster
 cluster = Cluster()
 session = cluster.connect('celica_al_engine_db') # Connect to database and keyspace
 
+for table in ['usage_log', 'user', 'lesson', 'coding_submission_history', 'lesson_exercise']:
+    session.execute("TRUNCATE {}".format(table))
+
 
 # # Insert Users
 
@@ -393,7 +398,7 @@ users = usageLog['user_email'].unique()
 print ( "Total number of users: {}".format(len(users)) )
 
 # createUserTable()
-# %time insertUsers(users)
+insertUsers(users)
 
 
 # # Insert Lessons
@@ -478,8 +483,8 @@ lessons = problemDF[['id', 'title']].values
 
 print ( "Total number of lessons: {}".format(len(lessons)))
 
-# insertLessons(lessons)
-# insertLessonExercise(lessons)
+insertLessons(lessons)
+insertLessonExercise(lessons)
 
 
 # # Insert CodingHistory
@@ -568,7 +573,7 @@ def insertCodingHistory( history ):
 
 # createCodingHistory()
 
-# %time insertCodingHistory(codingHistory)
+insertCodingHistory(codingHistory)
 
 
 # # Insert Usage Log
@@ -639,7 +644,7 @@ def insertUsageLog( usageLog ):
 # In[19]:
 
 # createUsageLog()
-# %time insertUsageLog(usageLog)
+insertUsageLog(usageLog)
 
 print ( "Total usagelog {}".format(len(usageLog)))
 
